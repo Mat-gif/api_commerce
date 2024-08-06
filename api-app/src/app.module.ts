@@ -4,8 +4,8 @@ import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { UsersController } from './users/users.controller';
 import { AppDataSource } from '../data-source';
+import { UsersController } from './modules/users/users.controller';
 
 @Module({
   imports: [
@@ -16,4 +16,14 @@ import { AppDataSource } from '../data-source';
   controllers: [AppController, UsersController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule {
+  constructor() {
+    AppDataSource.initialize()
+      .then(() => {
+        console.log('Data Source has been initialized!');
+      })
+      .catch((error) => {
+        console.error('Error during Data Source initialization:', error);
+      });
+  }
+}
