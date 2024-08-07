@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from './jwt/interfaces/jwt-payload.interface';
-import { CreateUserDto } from '../users/dto/create-user.dto';
+import { UserDto } from '../users/dto/user.dto';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { User } from '../../entity/user.entity';
@@ -15,53 +15,46 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async register(createUserDto: CreateUserDto) {
-    console.log(createUserDto);
-    const existingUser = await this.usersService.findByEmail(
-      createUserDto.email,
-    );
-    console.log(existingUser);
+  async register(userDto: UserDto): Promise<{ access_token: string }> {
+    const existingUser = await this.usersService.findByEmail(userDto.email);
     if (existingUser) {
-      throw new HttpException(
-        {
-          status: HttpStatus.BAD_REQUEST,
-          error: 'Email already use.',
-        },
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new HttpException('Email already in use.', HttpStatus.BAD_REQUEST);
     }
 
-    const hashedPassword = await bcrypt.hash(
-      createUserDto.password,
-      this.saltRounds,
-    );
-
-    console.log({
-      ...createUserDto,
-      password: hashedPassword,
-    });
+    const hashedPassword = await bcrypt.hash(userDto.password, this.saltRounds);
 
     const user = await this.usersService.create({
-      ...createUserDto,
+      ...userDto,
       password: hashedPassword,
     });
-    const payload: JwtPayload = { sub: user.id, email: user.email };
 
     return {
-      ...user,
-      access_token: this.jwtService.sign(payload),
+      access_token: this.jwtService.sign({ sub: user.id, email: user.email }),
     };
   }
 
-  async validateUser(email: string, password: string): Promise<User | null> {
-    const user = await this.usersService.findByEmail(email);
+  async validateUser(userDto: UserDto): Promise<User> {
+    const user = await this.usersService.findByEmail(userDto.email);
     if (!user) {
-      return null;
+      throw new HttpException('Email not found.', HttpStatus.BAD_REQUEST);
     }
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    const isPasswordValid = await bcrypt.compare(
+      userDto.password,
+      user.password,
+    );
     if (!isPasswordValid) {
-      return null;
+      throw new HttpException('Invalid password.', HttpStatus.BAD_REQUEST);
     }
+
     return user;
+  }
+
+  async login(userDto: UserDto) {
+    const user = await this.validateUser(userDto);
+
+    return {
+      access_token: this.jwtService.sign({ sub: user.id, email: user.email }),
+    };
   }
 }

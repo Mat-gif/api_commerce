@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
 import { AppDataSource } from '../data-source';
+import { HttpExceptionFilter } from './exception/http-exception.filter';
 
 dotenv.config({ path: '../.env' });
 
@@ -10,6 +11,7 @@ async function bootstrap() {
   await AppDataSource.initialize();
 
   const app = await NestFactory.create(AppModule);
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   const config = new DocumentBuilder()
     .setTitle('Api Documentation')

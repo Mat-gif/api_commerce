@@ -5,6 +5,8 @@ import {
   PrimaryGeneratedColumn,
   OneToOne,
   JoinColumn,
+  UpdateDateColumn,
+  CreateDateColumn,
 } from 'typeorm';
 import { Client } from './client.entity';
 import { Producer } from './producer.entity';
@@ -25,11 +27,11 @@ export class User {
   email: string;
 
   @ApiProperty()
-  @Column({ type: 'timestamp' })
+  @CreateDateColumn()
   createdAt: Date;
 
   @ApiProperty()
-  @Column({ type: 'timestamp' })
+  @UpdateDateColumn()
   updatedAt: Date;
 
   @ApiProperty()
